@@ -7,6 +7,10 @@ contract Crowdfunding {
 
     IERC20 myToken;
 
+    /**
+     * @dev emitted on project creation. User can get created projectId.
+     */
+
     event projectCreated( bytes32 projectId );
      
     address public owner;
@@ -23,6 +27,10 @@ contract Crowdfunding {
      mapping ( bytes32 => projectData ) public _projectData;
      mapping ( bytes32 => mapping(address => uint)) public customrFundedAmount;
 
+     /**
+      * @param _myToken Platform token address
+      */
+
     constructor(address _myToken) 
     {
         myToken = IERC20(_myToken);
@@ -33,6 +41,13 @@ contract Crowdfunding {
            require(msg.sender == owner,"Caller Is Not Owner");
            _; 
     }
+
+    /**
+     * @dev Platfoem owner can start project
+     * @param _fundingGoal Required fund for project
+     * @param _endTime fund raisinf end time
+     * @return bool creation status
+     */
 
     function startProject( uint _fundingGoal, uint _endTime  ) external isOwner returns(bool) 
     {
@@ -51,10 +66,15 @@ contract Crowdfunding {
             _projectData[projectId].endTime = _endTime;
             _projectData[projectId].fundingGoal = _fundingGoal;
 
-            emit projectCreated(projectId);
+            emit projectCreated(projectId); // User can get project Id thorough emited event
             return true;
     }        
     
+     /**
+     * @dev User can fund on project using projectId.
+     * @param projectId  projectId on wich user want to fund T
+     * @param amounForFund fund raisinf end time
+     */
 
     function fundProject( bytes32 projectId, uint amounForFund ) external
     {
@@ -71,6 +91,11 @@ contract Crowdfunding {
         customrFundedAmount[projectId][msg.sender] = amounForFund;
         _projectData[projectId].totalRecievedFund += amounForFund;
     }
+
+    /**
+     * @dev Project owner can claim fund using project id( Note: project fundraising time must be completed )
+     * @param projectId Id of project
+     */
     
     function claimFunds( bytes32 projectId ) public isOwner {
         require(_projectData[projectId].endTime < block.timestamp,"Can not claim befor project ending");
@@ -79,6 +104,11 @@ contract Crowdfunding {
         myToken.approve(msg.sender,_projectData[projectId].fundingGoal);
         myToken.transferFrom(address(this), msg.sender, _projectData[projectId].fundingGoal);
     }
+
+    /**
+     * @dev customer can get fund back id targerted project goal is not full filled.
+     * @param projectId Id of project.
+     */
 
     function getRefund(bytes32 projectId) public {
         require(_projectData[projectId].totalRecievedFund <  _projectData[projectId].fundingGoal,"funding goal not met");  // funding goal not met
