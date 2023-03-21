@@ -140,9 +140,8 @@ contract Crowdfunding {
             "Funding Goal is not reached"
         );
 
-        myToken.approve(msg.sender, _projectData[projectId].fundingGoal);
-        myToken.transferFrom(
-            address(this),
+        _projectData[projectId].totalRecievedFund = 0;
+        myToken.transfer(
             msg.sender,
             _projectData[projectId].fundingGoal
         );
@@ -170,13 +169,9 @@ contract Crowdfunding {
         require(amount > 0, "User does not have staked any amount");
 
         customrFundedAmount[projectId][msg.sender] = 0;
-        myToken.approve(msg.sender, amount);
-        myToken.transferFrom(address(this), msg.sender, amount);
+        _projectData[projectId].totalRecievedFund = 0;
+        myToken.transfer(msg.sender, amount);
         emit fundRefunded(amount, msg.sender);
     }
 }
 
-// Admin: 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4
-// User1: 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2
-// User2: 0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db
-// User3: 0x78731D3Ca6b7E34aC0F824c42a7cC18A495cabaB
