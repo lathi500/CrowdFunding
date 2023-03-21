@@ -11,7 +11,10 @@ contract Crowdfunding {
      * @dev emitted on project creation. User can get created projectId.
      */
 
-    event projectCreated( bytes32 projectId );
+    event projectCreated( bytes32 projectId, address projectOwner );
+    event fundProvided( uint256 userFundedAmount, address fundProvider );
+    event fundClaimed(   uint256 totalClaimedFund, address projectOwner );
+    event fundRefunded(  uint256 reFundedAmount, address user );
      
     address public owner;
    
@@ -43,16 +46,16 @@ contract Crowdfunding {
     }
 
     /**
-     * @dev Platfoem owner can start project
-     * @param _fundingGoal Required fund for project
-     * @param _endTime fund raisinf end time
-     * @return bool creation status
+     * @dev platform owner can start project
+     * @param _fundingGoal required fund for project
+     * @param _endTime fundraise ending time
+     * @return bool project creation status
      */
 
     function startProject( uint _fundingGoal, uint _endTime  ) external isOwner returns(bool) 
     {
             require( _endTime > block.timestamp," End time must be grater than start time");
-            require( _fundingGoal > 0," Must have required fund ");
+            require( _fundingGoal > 0," Must have required goal fund ");
 
             bytes32 projectId = keccak256( abi.encodePacked(
                 msg.sender,
@@ -66,14 +69,14 @@ contract Crowdfunding {
             _projectData[projectId].endTime = _endTime;
             _projectData[projectId].fundingGoal = _fundingGoal;
 
-            emit projectCreated(projectId); // User can get project Id thorough emited event
+            emit projectCreated(projectId, msg.sender); // User can get project Id thorough emited event
             return true;
     }        
     
      /**
-     * @dev User can fund on project using projectId.
-     * @param projectId  projectId on wich user want to fund T
-     * @param amounForFund fund raisinf end time
+     * @dev user can fund on project using projectId.
+     * @param projectId  projectId on wich user want to provide fund. 
+     * @param amounForFund fund amount user want to provide for given project id.
      */
 
     function fundProject( bytes32 projectId, uint amounForFund ) external
@@ -90,10 +93,12 @@ contract Crowdfunding {
 
         customrFundedAmount[projectId][msg.sender] = amounForFund;
         _projectData[projectId].totalRecievedFund += amounForFund;
+
+        emit fundProvided( amounForFund, msg.sender );
     }
 
     /**
-     * @dev Project owner can claim fund using project id( Note: project fundraising time must be completed )
+     * @dev Project owner can claim fund using project id( Note: project fundraise time must be completed )
      * @param projectId Id of project
      */
     
@@ -103,10 +108,11 @@ contract Crowdfunding {
 
         myToken.approve(msg.sender,_projectData[projectId].fundingGoal);
         myToken.transferFrom(address(this), msg.sender, _projectData[projectId].fundingGoal);
+        emit fundClaimed( _projectData[projectId].fundingGoal, msg.sender );
     }
 
     /**
-     * @dev customer can get fund back id targerted project goal is not full filled.
+     * @dev user can get fund back if funding goal is not full filled.
      * @param projectId Id of project.
      */
 
@@ -115,8 +121,19 @@ contract Crowdfunding {
         require(block.timestamp >= _projectData[projectId].endTime,"project time must be ended");               // in the withdrawal period
 
         uint256 amount = customrFundedAmount[projectId][msg.sender];
+
+        require( amount > 0, "User does not have staked any amount");
+
+        customrFundedAmount[projectId][msg.sender] = 0;
         myToken.approve(msg.sender,amount);
         myToken.transferFrom(address(this), msg.sender, amount);
-        customrFundedAmount[projectId][msg.sender] = 0;
+        emit fundRefunded( amount, msg.sender );
     }
 }
+
+// Admin: 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4
+// User1: 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2
+// User2: 0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db
+// User3: 0x78731D3Ca6b7E34aC0F824c42a7cC18A495cabaB
+
+
